@@ -173,7 +173,9 @@ if user_text:
     st.session_state.chat_history.append({"role": "assistant", "content": bot_response})
     with st.chat_message("assistant"):
         st.markdown(bot_response)
-    st.experimental_rerun()
+    st.rerun()
+
+
 
 
 
