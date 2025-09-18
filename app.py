@@ -6,7 +6,10 @@ st.set_page_config(page_title="HelloDoc", page_icon="💊")
 st.title("HelloDoc 💊")
 st.write("Your personal healthcare assistant (English + Hindi)")
 
-# --- Global State ---
+# --- Initialize session state ---
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
 if "awaiting_service_choice" not in st.session_state:
     st.session_state.awaiting_service_choice = False
 
@@ -65,9 +68,6 @@ def get_bot_response(user_input):
 
 
 # --- UI (Chat) ---
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
 # Display chat history
 for sender, msg in st.session_state.messages:
     if sender == "user":
@@ -83,6 +83,7 @@ if user_input:
     bot_response = get_bot_response(user_input)
     st.session_state.messages.append(("bot", bot_response))
     st.experimental_rerun()
+
 
 
 
