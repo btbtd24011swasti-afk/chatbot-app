@@ -1,98 +1,156 @@
 import streamlit as st
+import webbrowser
 import re
 
-# --- Page Config ---
-st.set_page_config(page_title="HelloDoc", page_icon="💊")
-st.title("HelloDoc 💊")
-st.write("Your personal healthcare assistant (English + Hindi)")
+# --- Global states ---
+if "awaiting_age_for_vaccine" not in st.session_state:
+    st.session_state.awaiting_age_for_vaccine = False
 
-# --- Initialize session state ---
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# Medicine options
+medicine_options = {
+    "1mg": {"price": "₹32.9", "delivery": "by today", "url": "https://www.1mg.com/drugs/dolo-650-tablet-74467/"},
+    "NetMeds": {"price": "₹30.84", "delivery": "1 day", "url": "https://www.netmeds.com/product/dolo-650-tablet-15s-lui1wb-8231049/"},
+    "PharmEasy": {"price": "₹25.02", "delivery": "1 day", "url": "https://pharmeasy.in/online-medicine-order/dolo-650mg-strip-of-15-tablets-44140/"},
+}
 
-if "awaiting_service_choice" not in st.session_state:
-    st.session_state.awaiting_service_choice = False
+# Mock outbreak alerts
+outbreak_alerts = [
+    "⚠ Dengue cases rising in Delhi NCR. Use mosquito repellents & keep surroundings clean.",
+    "⚠ Seasonal flu spreading in Mumbai. Wear masks & wash hands frequently.",
+]
 
-if "last_input" not in st.session_state:
-    st.session_state.last_input = ""
+# Vaccination schedule sample
+vaccination_schedule = {
+    "child": ["BCG", "Polio", "Hepatitis B", "MMR"],
+    "adult": ["Tetanus booster (every 10 years)", "Flu shot (annual)", "COVID-19 booster"],
+    "elderly": ["Pneumococcal vaccine", "Shingles vaccine"],
+}
 
+# Preventive healthcare tips
+preventive_tips = [
+    "🟢 Wash hands regularly with soap.",
+    "🟢 Exercise 30 mins daily.",
+    "🟢 Eat balanced diet (fruits & veggies).",
+    "🟢 Get 7-8 hours of sleep.",
+]
 
-# --- Helper: Menu ---
-def get_menu():
-    return (
-        "1️⃣ Symptoms (fever, cough, etc.)\n"
-        "2️⃣ Remedies (Home, Ayurveda, Homeopathy)\n"
-        "3️⃣ Doctor Consultation\n"
-        "4️⃣ Medicine Ordering & Price Comparison\n"
-        "5️⃣ Outbreak Alerts\n"
-        "6️⃣ Vaccination Reminders\n"
-        "7️⃣ Preventive Healthcare Tips\n"
-        "8️⃣ First Aid Guidance\n"
-    )
+# First Aid dictionary
+first_aid_tips = {
+    "burn": "🔥 Burn: Cool with running water for 20 minutes. Do NOT apply ice.",
+    "cut": "🩸 Cut: Wash with clean water, apply antiseptic, cover with bandage.",
+    "bleeding": "🩸 Bleeding: Wash with clean water, apply antiseptic, cover with bandage.",
+    "faint": "😵 Fainting: Lay person flat, raise legs slightly, loosen tight clothing.",
+    "fracture": "🦴 Fracture: Keep limb still, support with splint, seek medical help.",
+}
 
-
-# --- Chatbot Logic ---
+# --- Chatbot logic ---
 def get_bot_response(user_input):
     user_input = user_input.lower().strip()
 
-    # --- Service selection takes priority ---
-    if st.session_state.awaiting_service_choice:
-        if user_input in ["1", "symptom", "symptoms"]:
-            st.session_state.awaiting_service_choice = False
-            return "🤒 Please tell me your symptom (e.g., fever, cough)."
-        elif user_input in ["2", "remedy", "remedies"]:
-            st.session_state.awaiting_service_choice = False
-            return "✅ Home Remedies:\n- Fever: Tulsi + ginger kadha\n- Cough: Honey + warm water\n- Cold: Steam inhalation"
-        elif user_input in ["3", "doctor", "consult"]:
-            st.session_state.awaiting_service_choice = False
-            return "👨‍⚕️ Opening Practo for doctor consultation: [Practo](https://www.practo.com/)"
-        elif user_input in ["4", "medicine", "tablet", "drug"]:
-            st.session_state.awaiting_service_choice = False
-            return "💊 Medicine Price Comparison:\n- 1mg: ₹50 (2 days)\n- Netmeds: ₹45 (3 days)\n- PharmEasy: ₹55 (1 day)"
-        elif user_input in ["5", "alert", "outbreak", "disease"]:
-            st.session_state.awaiting_service_choice = False
-            return "📢 Current Health Alerts:\n- Dengue cases rising in Delhi NCR\n- Seasonal flu in Mumbai"
-        elif user_input in ["6", "vaccine", "vaccination"]:
-            st.session_state.awaiting_service_choice = False
-            return "💉 Please tell me your age to get vaccination reminders."
-        elif user_input in ["7", "prevent", "tips", "healthy"]:
-            st.session_state.awaiting_service_choice = False
-            return "🛡 Preventive Tips:\n- Wash hands\n- Exercise daily\n- Eat healthy\n- Sleep 7-8 hrs"
-        elif user_input in ["8", "first aid"]:
-            st.session_state.awaiting_service_choice = False
-            return "⛑ First Aid Guide:\n- Burn: Cool with water\n- Cut: Clean & bandage\n- Faint: Lay flat & raise legs"
-        else:
-            return "❓ Invalid choice. Please type a number (1–8)."
+    # --- Vaccine age ---
+    if st.session_state.awaiting_age_for_vaccine:
+        try:
+            age = int(re.findall(r'\d+', user_input)[0])
+            st.session_state.awaiting_age_for_vaccine = False
+            if age < 18:
+                return "💉 Vaccination Reminders for Children:\n" + ", ".join(vaccination_schedule["child"])
+            elif 18 <= age < 60:
+                return "💉 Vaccination Reminders for Adults:\n" + ", ".join(vaccination_schedule["adult"])
+            else:
+                return "💉 Vaccination Reminders for Elderly:\n" + ", ".join(vaccination_schedule["elderly"])
+        except:
+            return "❓ Please enter a valid age (e.g., 25)."
 
-    # --- Greeting triggers ---
-    if any(word in user_input for word in ["hi", "hello", "hey", "namaste"]):
-        st.session_state.awaiting_service_choice = True
-        return "👋 I am HelloDoc. Here are my services:\n" + get_menu()
+    # --- Greetings ---
+    if any(word in user_input for word in ["hi", "hello", "hey", "namaste", "namaskar", "salaam"]):
+        return "नमस्ते! 👋 Hello! I can talk in Hindi & English. How can I help you today?"
 
-    # --- Garbage filter (after menu/service handling) ---
-    if not re.search(r"[a-zA-Z0-9]", user_input) or len(user_input) < 2:
-        return "⚠️ That doesn’t look like a valid query. Please type **hi** to see the menu."
+    # --- Thanks ---
+    if any(word in user_input for word in ["thanks", "thank you", "dhanyavad", "shukriya"]):
+        return "You're welcome! 😊 Glad I could help."
 
-    # --- Fallback ---
-    return "❓ I didn't understand. Type **hi** to see the menu again.\n\n" + get_menu()
+    # --- Symptoms ---
+    if "fever" in user_input or "bukhar" in user_input:
+        return "It seems like you may have a fever 🤒. Stay hydrated and rest well.\nFor emergencies, consult a doctor immediately."
+    if "cough" in user_input or "khansi" in user_input or "khasi" in user_input:
+        return "Cough detected. Drink warm fluids, honey + ginger tea may help.\nIf it persists >1 week, see a doctor."
 
+    # --- Remedies ---
+    if "home remedy" in user_input or "home remedies" in user_input:
+        return "✅ Home Remedy Suggestion:\n- Fever: Drink tulsi + ginger kadha.\n- Cough: Honey with warm water.\n- Cold: Steam inhalation with ajwain seeds."
+    if "ayurveda" in user_input or "ayurvedic" in user_input:
+        return "🌿 Ayurvedic Tip:\n- Fever: Giloy juice.\n- Indigestion: Triphala powder with warm water.\n- Immunity: Chyawanprash daily."
+    if "homeopathy" in user_input or "homoeopathic" in user_input:
+        return "⚪ Homeopathic Suggestion:\n- Fever: Belladonna 30.\n- Cough: Drosera 30.\n- Cold: Arsenicum Album 30.\n(Use only with doctor’s guidance)."
 
-# --- Display chat history ---
-for sender, msg in st.session_state.messages:
-    if sender == "user":
-        st.markdown(f"**You:** {msg}")
+    # --- Doctor consultation ---
+    if any(word in user_input for word in ["doctor", "consult"]):
+        webbrowser.open("https://www.practo.com/")
+        return "👨‍⚕ Redirecting you to Practo for doctor consultation."
+
+    # --- Medicine info (use buttons) ---
+    if any(word in user_input for word in ["medicine", "tablet", "drug"]):
+        return "💊 Click a button below to visit the pharmacy website:"
+
+    # --- Outbreak alerts ---
+    if any(word in user_input for word in ["outbreak", "alert", "disease"]):
+        return "📢 Current Health Alerts:\n" + "\n".join(outbreak_alerts)
+
+    # --- Vaccination reminders ---
+    if any(word in user_input for word in ["vaccine", "vaccination", "reminder"]):
+        st.session_state.awaiting_age_for_vaccine = True
+        return "💉 Please tell me your age so I can suggest the right vaccination reminders."
+
+    # --- Preventive healthcare ---
+    if any(word in user_input for word in ["prevent", "healthy", "tips"]):
+        return "🛡 Preventive Healthcare Tips:\n" + "\n".join(preventive_tips)
+
+    # --- First aid ---
+    for condition, tip in first_aid_tips.items():
+        if condition in user_input:
+            return f"⛑ First Aid Suggestion:\n{tip}"
+    if "first aid" in user_input:
+        tips_list = "\n".join([f"- {k.capitalize()}: {v}" for k, v in first_aid_tips.items()])
+        return f"⛑ First Aid Guide:\n{tips_list}"
+
+    return ("I can assist with:\n- Symptoms (fever, cough, etc.)\n- Remedies (Home, Ayurveda, Homeopathy)\n"
+            "- Doctor consultation\n- Medicine ordering & comparison\n- Outbreak alerts\n- Vaccination reminders\n"
+            "- Preventive healthcare tips\n- First aid guidance")
+
+# --- Streamlit UI ---
+st.set_page_config(page_title="Healthcare Chatbot 🤖", layout="wide")
+st.title("Healthcare Chatbot 🤖")
+st.markdown("Hello! I am your Healthcare Assistant. Ask me anything about symptoms, remedies, vaccines, or medicines.")
+
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+# User input
+user_input = st.text_input("You:", "")
+
+if st.button("Send") or user_input:
+    if user_input:
+        st.session_state.chat_history.append(("You", user_input))
+        bot_response = get_bot_response(user_input)
+        st.session_state.chat_history.append(("Bot", bot_response))
+
+# Display chat history
+for sender, message in st.session_state.chat_history:
+    if sender == "You":
+        st.markdown(f"**{sender}:** {message}")
     else:
-        st.markdown(f"**🤖 HelloDoc:** {msg}")
+        st.markdown(f"<span style='color:green'>{sender}: {message}</span>", unsafe_allow_html=True)
 
-# --- Input box ---
-user_input = st.text_input("Type your message here:", value="", key="input_box")
+# --- Medicine buttons ---
+if st.session_state.chat_history and "💊 Click a button" in st.session_state.chat_history[-1][1]:
+    st.markdown("**Select a pharmacy:**")
+    cols = st.columns(len(medicine_options))
+    for i, (site, info) in enumerate(medicine_options.items()):
+        if cols[i].button(site):
+            webbrowser.open(info["url"])
+            st.session_state.chat_history.append(("Bot", f"💊 Redirecting you to {site} for order placement."))
 
-# --- Process input once ---
-if user_input and user_input != st.session_state.last_input:
-    st.session_state.last_input = user_input
-    bot_response = get_bot_response(user_input)
-    st.session_state.messages.append(("user", user_input))
-    st.session_state.messages.append(("bot", bot_response))
+
 
 
 
