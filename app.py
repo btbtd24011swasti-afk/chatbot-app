@@ -13,6 +13,12 @@ if "messages" not in st.session_state:
 if "awaiting_service_choice" not in st.session_state:
     st.session_state.awaiting_service_choice = False
 
+if "last_input" not in st.session_state:
+    st.session_state.last_input = ""
+
+if "input_box" not in st.session_state:
+    st.session_state.input_box = ""
+
 
 # --- Helper: Menu ---
 def get_menu():
@@ -32,13 +38,8 @@ def get_menu():
 def get_bot_response(user_input):
     user_input = user_input.lower().strip()
 
-    # Garbage filter (nonsense or empty)
-    if not re.search(r"[a-zA-Z0-9]", user_input) or len(user_input) < 2:
-        return "⚠️ That doesn’t look like a valid query. Please type **hi** to see the menu."
-
-    # --- Service selection ---
+    # --- Service selection takes priority ---
     if st.session_state.awaiting_service_choice:
-        # Check for valid choices
         if user_input in ["1", "symptom", "symptoms"]:
             st.session_state.awaiting_service_choice = False
             return "🤒 Please tell me your symptom (e.g., fever, cough)."
@@ -64,13 +65,16 @@ def get_bot_response(user_input):
             st.session_state.awaiting_service_choice = False
             return "⛑ First Aid Guide:\n- Burn: Cool with water\n- Cut: Clean & bandage\n- Faint: Lay flat & raise legs"
         else:
-            # Do NOT reset awaiting_service_choice yet
             return "❓ Invalid choice. Please type a number (1–8)."
 
     # --- Greeting triggers ---
     if any(word in user_input for word in ["hi", "hello", "hey", "namaste"]):
         st.session_state.awaiting_service_choice = True
         return "👋 I am HelloDoc. Here are my services:\n" + get_menu()
+
+    # --- Garbage filter (after menu/service handling) ---
+    if not re.search(r"[a-zA-Z0-9]", user_input) or len(user_input) < 2:
+        return "⚠️ That doesn’t look like a valid query. Please type **hi** to see the menu."
 
     # --- Fallback ---
     return "❓ I didn't understand. Type **hi** to see the menu again.\n\n" + get_menu()
@@ -84,13 +88,19 @@ for sender, msg in st.session_state.messages:
     else:
         st.markdown(f"**🤖 HelloDoc:** {msg}")
 
-# Input box (automatically clears after Enter)
-user_input = st.text_input("Type your message here:", key="input")
+# Input box (auto-clears and processes only once per input)
+st.session_state.input_box = st.text_input("Type your message here:", value="", key="input_box")
+if st.session_state.input_box and st.session_state.input_box != st.session_state.last_input:
+    user_input = st.session_state.input_box
+    st.session_state.last_input = user_input
 
-if user_input:
     bot_response = get_bot_response(user_input)
     st.session_state.messages.append(("user", user_input))
     st.session_state.messages.append(("bot", bot_response))
+
+    # Clear input box
+    st.session_state.input_box = ""
+
 
 
 
