@@ -1,65 +1,69 @@
 import streamlit as st
+from datetime import datetime
+import random
 
-# --- Chatbot Logic ---
+# Dummy database of intents
+intents = {
+    "symptoms": {
+        "keywords": ["fever", "cough", "headache", "cold", "sore throat", "बुखार", "खांसी", "सरदर्द"],
+        "responses": [
+            "It could be a mild flu or infection. Drink plenty of water and rest.",
+            "Sometimes these symptoms indicate dehydration or viral fever. Stay hydrated!",
+            "If symptoms persist, it’s best to consult a doctor."
+        ]
+    },
+    "greeting": {
+        "keywords": ["hello", "hi", "hey", "नमस्ते"],
+        "responses": [
+            "Hello! How can I assist you today?",
+            "Hi there! Tell me your symptoms, and I’ll try to guide you.",
+            "Hey! What health issue are you facing?"
+        ]
+    },
+    "goodbye": {
+        "keywords": ["bye", "thank you", "thanks", "goodbye"],
+        "responses": [
+            "Take care! Wishing you good health.",
+            "Goodbye! Stay safe and healthy.",
+            "Thanks for chatting. Hope you feel better soon!"
+        ]
+    }
+}
+
+# Function to get chatbot response
 def chatbot_response(user_input):
     user_input = user_input.lower()
-
-    if "hello" in user_input or "hi" in user_input:
-        return ("Hello! How can I help you today?",
-                ["Check symptoms", "Get general health tips", "Talk to a doctor"])
-    
-    elif "symptom" in user_input:
-        return ("Sure! Please describe your symptoms (e.g., fever, cough, headache).",
-                ["Fever", "Cough", "Headache"])
-    
-    elif "fever" in user_input:
-        return ("Fever may be caused by infections like cold or flu. Drink water and rest. "
-                "If it persists, consult a doctor.",
-                ["General health tips", "Talk to a doctor", "Vaccination reminders"])
-    
-    elif "tip" in user_input or "health" in user_input:
-        return ("Health Tip: Maintain a balanced diet, stay hydrated, and sleep at least 7 hours daily.",
-                ["Check symptoms", "Talk to a doctor", "Get vaccination reminders"])
-    
-    elif "doctor" in user_input:
-        return ("I can connect you to a human doctor (if available). Meanwhile, you can follow some basic health tips.",
-                ["General health tips", "Check symptoms", "Medicine information"])
-    
-    else:
-        return ("Sorry, I didn't understand that.", 
-                ["Try 'Check symptoms'", "Ask for health tips", "Talk to a doctor"])
-
+    for intent, data in intents.items():
+        if any(keyword in user_input for keyword in data["keywords"]):
+            return random.choice(data["responses"])
+    return "I'm not sure about that. Please consult a medical professional."
 
 # --- Streamlit UI ---
-st.title("💊 Healthcare Chatbot")
+st.set_page_config(page_title="Healthcare Chatbot", page_icon="🤖")
 
-# Store conversation history
+st.title("🤖 Healthcare Chatbot")
+st.write("I can answer simple health-related queries. (For serious conditions, please consult a doctor!)")
+
+# Chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Chat display
+# Display previous messages
 for msg in st.session_state.messages:
-    role, text = msg
-    if role == "user":
-        st.markdown(f"**🧑 You:** {text}")
+    if msg["role"] == "user":
+        st.chat_message("user").markdown(msg["content"])
     else:
-        st.markdown(f"**🤖 Bot:** {text}")
+        st.chat_message("assistant").markdown(msg["content"])
 
-# Input box
-user_input = st.text_input("Type your message:")
+# User input
+if prompt := st.chat_input("Type your message..."):
+    # Save user message
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.chat_message("user").markdown(prompt)
 
-if user_input:
-    # Add user message
-    st.session_state.messages.append(("user", user_input))
+    # Generate bot response
+    response = chatbot_response(prompt)
+    st.session_state.messages.append({"role": "assistant", "content": response})
+    st.chat_message("assistant").markdown(response)
 
-    # Get bot response
-    response, suggestions = chatbot_response(user_input)
-    st.session_state.messages.append(("bot", response))
 
-    # Show suggestions
-    st.markdown("👉 **Suggestions:**")
-    for s in suggestions:
-        st.write(f"- {s}")
-
-    # Clear input box for next round
-    st.experimental_rerun()
