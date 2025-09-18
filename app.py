@@ -79,10 +79,11 @@ for sender, msg in st.session_state.messages:
 user_input = st.text_input("Type your message here:", key="input")
 
 if user_input:
-    st.session_state.messages.append(("user", user_input))
     bot_response = get_bot_response(user_input)
+    st.session_state.messages.append(("user", user_input))
     st.session_state.messages.append(("bot", bot_response))
-    st.experimental_rerun()
+
+
 
 
 
