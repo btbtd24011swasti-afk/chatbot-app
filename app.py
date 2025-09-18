@@ -16,9 +16,6 @@ if "awaiting_service_choice" not in st.session_state:
 if "last_input" not in st.session_state:
     st.session_state.last_input = ""
 
-if "input_box" not in st.session_state:
-    st.session_state.input_box = ""
-
 
 # --- Helper: Menu ---
 def get_menu():
@@ -80,26 +77,24 @@ def get_bot_response(user_input):
     return "❓ I didn't understand. Type **hi** to see the menu again.\n\n" + get_menu()
 
 
-# --- UI (Chat) ---
-# Display chat history
+# --- Display chat history ---
 for sender, msg in st.session_state.messages:
     if sender == "user":
         st.markdown(f"**You:** {msg}")
     else:
         st.markdown(f"**🤖 HelloDoc:** {msg}")
 
-# Input box (auto-clears and processes only once per input)
-st.session_state.input_box = st.text_input("Type your message here:", value="", key="input_box")
-if st.session_state.input_box and st.session_state.input_box != st.session_state.last_input:
-    user_input = st.session_state.input_box
-    st.session_state.last_input = user_input
+# --- Input box ---
+user_input = st.text_input("Type your message here:", value="", key="input_box")
 
+# --- Process input once ---
+if user_input and user_input != st.session_state.last_input:
+    st.session_state.last_input = user_input
     bot_response = get_bot_response(user_input)
     st.session_state.messages.append(("user", user_input))
     st.session_state.messages.append(("bot", bot_response))
 
-    # Clear input box
-    st.session_state.input_box = ""
+
 
 
 
