@@ -38,24 +38,33 @@ def get_bot_response(user_input):
 
     # --- Service selection ---
     if st.session_state.awaiting_service_choice:
-        st.session_state.awaiting_service_choice = False
+        # Check for valid choices
         if user_input in ["1", "symptom", "symptoms"]:
+            st.session_state.awaiting_service_choice = False
             return "🤒 Please tell me your symptom (e.g., fever, cough)."
         elif user_input in ["2", "remedy", "remedies"]:
+            st.session_state.awaiting_service_choice = False
             return "✅ Home Remedies:\n- Fever: Tulsi + ginger kadha\n- Cough: Honey + warm water\n- Cold: Steam inhalation"
         elif user_input in ["3", "doctor", "consult"]:
+            st.session_state.awaiting_service_choice = False
             return "👨‍⚕️ Opening Practo for doctor consultation: [Practo](https://www.practo.com/)"
         elif user_input in ["4", "medicine", "tablet", "drug"]:
+            st.session_state.awaiting_service_choice = False
             return "💊 Medicine Price Comparison:\n- 1mg: ₹50 (2 days)\n- Netmeds: ₹45 (3 days)\n- PharmEasy: ₹55 (1 day)"
         elif user_input in ["5", "alert", "outbreak", "disease"]:
+            st.session_state.awaiting_service_choice = False
             return "📢 Current Health Alerts:\n- Dengue cases rising in Delhi NCR\n- Seasonal flu in Mumbai"
         elif user_input in ["6", "vaccine", "vaccination"]:
+            st.session_state.awaiting_service_choice = False
             return "💉 Please tell me your age to get vaccination reminders."
         elif user_input in ["7", "prevent", "tips", "healthy"]:
+            st.session_state.awaiting_service_choice = False
             return "🛡 Preventive Tips:\n- Wash hands\n- Exercise daily\n- Eat healthy\n- Sleep 7-8 hrs"
         elif user_input in ["8", "first aid"]:
+            st.session_state.awaiting_service_choice = False
             return "⛑ First Aid Guide:\n- Burn: Cool with water\n- Cut: Clean & bandage\n- Faint: Lay flat & raise legs"
         else:
+            # Do NOT reset awaiting_service_choice yet
             return "❓ Invalid choice. Please type a number (1–8)."
 
     # --- Greeting triggers ---
@@ -75,13 +84,15 @@ for sender, msg in st.session_state.messages:
     else:
         st.markdown(f"**🤖 HelloDoc:** {msg}")
 
-# Input box
+# Input box (automatically clears after Enter)
 user_input = st.text_input("Type your message here:", key="input")
 
 if user_input:
     bot_response = get_bot_response(user_input)
     st.session_state.messages.append(("user", user_input))
     st.session_state.messages.append(("bot", bot_response))
+
+
 
 
 
